@@ -17,8 +17,7 @@ defmodule EscapeDisasterWeb.Router do
   scope "/", EscapeDisasterWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
-    live "/map", MapLive
+    live "/", MapLive
   end
 
   # Other scopes may use custom stacks.
