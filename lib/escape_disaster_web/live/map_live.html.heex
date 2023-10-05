@@ -2,5 +2,28 @@
   <h1 class="text-brand flex items-center font-semibold">
     Escape Disaster 101
   </h1>
-  <div id="map"></div>
+  <.simple_form for={@map_layers}>
+    <.input
+      type="checkbox"
+      value={@map_layers["show_forest_fire"]}
+      name="show_forest_fire"
+      label="산불"
+      phx-change="toggle-forest-fire-layer"
+    />
+    <.input
+      type="checkbox"
+      value={@map_layers["show_flood"]}
+      name="show_flood"
+      label="해안침수"
+      phx-change="toggle-flood-layer"
+    />
+    <.input
+      type="checkbox"
+      value={@map_layers["show_disaster_warning"]}
+      name="show_disaster_warning"
+      label="재해위험"
+      phx-change="toggle-disaster-warning-layer"
+    />
+  </.simple_form>
+  <div id="map" phx-update="ignore"></div>
 </div>
