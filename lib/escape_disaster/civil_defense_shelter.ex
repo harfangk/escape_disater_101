@@ -1,6 +1,8 @@
 defmodule EscapeDisaster.CivilDefenseShelter do
+  alias EscapeDisaster.CivilDefenseShelter
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, only: [from: 2]
 
   # 전국민방위대피시설표준데이터
   # https://www.data.go.kr/data/15021098/standard.do
@@ -99,5 +101,36 @@ defmodule EscapeDisaster.CivilDefenseShelter do
       :y_coord,
       :shelter_type
     ])
+  end
+
+  def get_shelters_to_show(
+        [
+          bottom_left_x_coord,
+          bottom_left_y_coord
+        ],
+        [
+          top_right_x_coord,
+          top_right_y_coord
+        ]
+      ) do
+    query =
+      from c in CivilDefenseShelter,
+        where:
+          c.x_coord >= ^bottom_left_x_coord and c.x_coord <= ^top_right_x_coord and
+            c.y_coord >= ^bottom_left_y_coord and c.y_coord <= ^top_right_y_coord and
+            c.operation_state_code == 1,
+        select:
+          map(c, [
+            :shelter_id,
+            :license_date,
+            :road_name_address,
+            :road_name_postal_code,
+            :x_coord,
+            :y_coord,
+            :operator_name,
+            :shelter_building_name
+          ])
+
+    EscapeDisaster.Repo.all(query)
   end
 end

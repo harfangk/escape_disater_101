@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :escape_disaster, EscapeDisasterWeb.Endpoint, server: true
 end
 
+config :escape_disaster,
+  naver_map_client_id: System.get_env("NAVER_MAP_CLIENT_ID"),
+  naver_map_client_secret: System.get_env("NAVER_MAP_CLIENT_SECRET")
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

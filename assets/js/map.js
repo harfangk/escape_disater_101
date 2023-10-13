@@ -3,6 +3,7 @@ import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
 import XYZ from 'ol/source/XYZ';
 import { transform } from 'ol/proj';
+import { getBottomLeft, getTopRight } from 'ol/extent';
 
 // Calling API on our own backend, downloading and saving map tile images, then serving them would hide these keys
 // but will incur network costs that we're not willing to pay at the moment, so the keys are exposed to the public.
@@ -17,9 +18,11 @@ const FOREST_FIRE_LAYER_NAME = 'forestFire'
 const BASE_LAYER_NAME = 'base'
 const DISASTER_WARNING_LAYER_NAME = 'disasterWarning'
 const FLOOD_LAYER_NAME = 'flood'
+const CIVIL_DEFENSE_SHELTERS_LAYER_NAME = 'civilDefenseShelters'
 const TOGGLEABLE_LAYER_KEYS = [
   FOREST_FIRE_LAYER_NAME,
   DISASTER_WARNING_LAYER_NAME,
+  CIVIL_DEFENSE_SHELTERS_LAYER_NAME,
   FLOOD_LAYER_NAME,
 ]
 
@@ -76,7 +79,7 @@ const LAYERS_MAP = {
 
 function getCenterCoordinate() {
   if (navigator && navigator.geolocation) {
-    const coords = navigator.geolocation.getCurrentPosition(geolocationPosition => {
+    navigator.geolocation.getCurrentPosition(geolocationPosition => {
       return [geolocationPosition.coords.longitude, geolocationPosition.coords.latitude]
     }, _geolocationPositionError => {
       return DEFAULT_CENTER_COORDINATE
@@ -97,7 +100,6 @@ const view = new View({
   center: center,
   zoom: 8
 })
-
 let map
 
 const layers =
@@ -114,21 +116,40 @@ window.addEventListener("phx:page-loading-stop", _ => {
     layers: layers,
     view: view
   });
+  map.on('moveend', onMoveEnd);
 })
 
 window.addEventListener("phx:toggle-layer", (payload) => {
   const key = payload.detail.key
-  const value = payload.detail.value
+  const shouldShow = payload.detail.shouldShow
   if (TOGGLEABLE_LAYER_KEYS.includes(key)) {
-    if (typeof value === 'boolean') {
-      if (value) {
-        map.addLayer(LAYERS_MAP[key])
-      } else {
-        const targetLayer = map.getLayers().getArray().filter(l => l.get('name') === key)[0]
-        if (targetLayer) {
-          map.removeLayer(targetLayer)
-        }
+    if (shouldShow) {
+      map.addLayer(LAYERS_MAP[key])
+    } else {
+      const targetLayer = map.getLayers().getArray().filter(l => l.get('name') === key)[0]
+      if (targetLayer) {
+        map.removeLayer(targetLayer)
       }
     }
   }
 })
+
+function onMoveEnd(evt) {
+  const map = evt.map
+  const view = map.getView()
+  const extent = view.calculateExtent(map.getSize());
+  const bottomLeft = getBottomLeft(extent);
+  const topRight = getTopRight(extent);
+  const center = view.getCenter()
+  const event = new CustomEvent('escape-disaster:update-map-info', { detail: { bottomLeft, topRight, center } });
+  document.getElementById('map-container').dispatchEvent(event);
+}
+
+export const MapHook = {
+  mounted() {
+    this.el.addEventListener('escape-disaster:update-map-info', info => {
+      const detail = info.detail
+      this.pushEvent('update-map-info', { bottomLeft: detail.bottomLeft, topRight: detail.topRight, center: detail.center })
+    });
+  }
+}

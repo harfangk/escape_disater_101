@@ -1,4 +1,4 @@
-<div class="p-2">
+<div class="p-2" phx-hook="MapHook" id="map-container">
   <h1 class="text-brand flex items-center font-semibold">
     Escape Disaster 101
   </h1>
@@ -23,6 +23,13 @@
       name="show_disaster_warning"
       label="재해위험"
       phx-change="toggle-disaster-warning-layer"
+    />
+    <.input
+      type="checkbox"
+      value={@map_layers["show_civil_defense_shelters"]}
+      name="show_civil_defense_shelters"
+      label="민방위 대피시설"
+      phx-change="toggle-civil-defense-shelters-layer"
     />
   </.simple_form>
   <div id="map" phx-update="ignore"></div>

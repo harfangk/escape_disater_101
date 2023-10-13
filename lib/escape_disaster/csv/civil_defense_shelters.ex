@@ -2,53 +2,87 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   alias EscapeDisaster.CivilDefenseShelter
   NimbleCSV.define(CivilDefenseShelters, [])
 
-  def parse(file_path) do
+  def parse(file_path, encoding \\ "euc-kr") do
     file_path
-    |> File.stream!()
-    # TODO: Rows with invalid CSV format exists, including double quotes inside cells. Deal with them.
-    |> Stream.map(fn r -> :iconv.convert("euc-kr", "utf-8", r) end)
-    |> CivilDefenseShelters.parse_stream()
-    |> Stream.map(fn raw_data ->
-      CivilDefenseShelter.changeset(%CivilDefenseShelter{}, serialize(raw_data))
-    end)
-    # TODO: 16k out of 40k data lack x, y coordinates. Process them to add them.
-    |> Stream.filter(fn changeset -> changeset.valid? end)
+    |> build_stream
+    |> convert_encoding(encoding)
+    |> parse_stream
+    |> serialize_rows
+    |> filter_valid_rows
   end
 
-  def serialize([
-        number,
-        open_api_service_name,
-        open_api_service_id,
-        open_api_local_government_code,
-        shelter_id,
-        license_date,
-        license_cancellation_date,
-        operation_state_code,
-        operation_state_name,
-        precise_operation_state_code,
-        precise_operation_state_name,
-        close_date,
-        temporary_close_start_date,
-        temporary_close_end_date,
-        reopen_date,
-        phone_number,
-        surface_area,
-        land_lot_number_postal_code,
-        land_lot_number_address,
-        road_name_address,
-        road_name_postal_code,
-        operator_name,
-        source_data_submitted_at,
-        data_update_state,
-        data_updated_at,
-        operator_business_type_name,
-        x_coord,
-        y_coord,
-        shelter_location,
-        shelter_type,
-        shelter_building_name,
-        expiration_date
-      ]) do
+  def add_coords(file_path, encoding \\ "euc-kr") do
+    file_path
+    |> build_stream
+    |> convert_encoding(encoding)
+    |> parse_stream
+  end
+
+  defp build_stream(file_path) do
+    file_path
+    |> File.stream!()
+  end
+
+  defp convert_encoding(stream, encoding) do
+    # TODO: Rows with invalid CSV format exists, including double quotes inside cells. Deal with them.
+    stream
+    |> Stream.map(fn r -> :iconv.convert(encoding, "utf-8", r) end)
+  end
+
+  defp parse_stream(stream) do
+    CivilDefenseShelters.parse_stream(stream)
+  end
+
+  defp serialize_rows(stream) do
+    Stream.map(stream, fn row ->
+      CivilDefenseShelter.changeset(%CivilDefenseShelter{}, serialize(row))
+    end)
+  end
+
+  defp get_coordinates(stream) do
+    Stream.map(stream, fn row ->
+      nil
+    end)
+  end
+
+  defp filter_valid_rows(stream) do
+    Stream.filter(stream, fn changeset -> changeset.valid? end)
+  end
+
+  defp serialize([
+         number,
+         open_api_service_name,
+         open_api_service_id,
+         open_api_local_government_code,
+         shelter_id,
+         license_date,
+         license_cancellation_date,
+         operation_state_code,
+         operation_state_name,
+         precise_operation_state_code,
+         precise_operation_state_name,
+         close_date,
+         temporary_close_start_date,
+         temporary_close_end_date,
+         reopen_date,
+         phone_number,
+         surface_area,
+         land_lot_number_postal_code,
+         land_lot_number_address,
+         road_name_address,
+         road_name_postal_code,
+         operator_name,
+         source_data_submitted_at,
+         data_update_state,
+         data_updated_at,
+         operator_business_type_name,
+         x_coord,
+         y_coord,
+         shelter_location,
+         shelter_type,
+         shelter_building_name,
+         expiration_date
+       ]) do
     with {parsed_number, _rem} <- Integer.parse(number),
          {parsed_operation_state_code, _rem} <- Integer.parse(operation_state_code),
          {parsed_precise_operation_state_code, _rem} <-
