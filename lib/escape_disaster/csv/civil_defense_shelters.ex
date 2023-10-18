@@ -1,21 +1,33 @@
 defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   alias EscapeDisaster.CivilDefenseShelter
-  NimbleCSV.define(CivilDefenseShelters, [])
+  alias NimbleCSV.RFC4180, as: CSV
 
   def parse(file_path, encoding \\ "euc-kr") do
     file_path
-    |> build_stream
+    |> build_stream()
     |> convert_encoding(encoding)
-    |> parse_stream
-    |> serialize_rows
-    |> filter_valid_rows
+    |> parse_stream()
   end
 
-  def add_coords(file_path, encoding \\ "euc-kr") do
-    file_path
-    |> build_stream
-    |> convert_encoding(encoding)
-    |> parse_stream
+  def process(stream) do
+    stream
+    |> add_coordinates()
+    |> serialize_rows()
+    |> filter_valid_rows()
+    |> Stream.map(fn changeset -> changeset.changes end)
+  end
+
+  def upsert(file_path) do
+    entries =
+      file_path
+      |> parse()
+      |> process()
+      |> Enum.to_list()
+
+    EscapeDisaster.Repo.insert_all(EscapeDisaster.CivilDefenseShelter, entries,
+      conflict_target: :shelter_id,
+      on_conflict: :replace_all
+    )
   end
 
   defp build_stream(file_path) do
@@ -24,13 +36,12 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   end
 
   defp convert_encoding(stream, encoding) do
-    # TODO: Rows with invalid CSV format exists, including double quotes inside cells. Deal with them.
     stream
     |> Stream.map(fn r -> :iconv.convert(encoding, "utf-8", r) end)
   end
 
   defp parse_stream(stream) do
-    CivilDefenseShelters.parse_stream(stream)
+    CSV.parse_stream(stream)
   end
 
   defp serialize_rows(stream) do
@@ -39,14 +50,29 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
     end)
   end
 
-  defp get_coordinates(stream) do
+  defp add_coordinates(stream) do
     Stream.map(stream, fn row ->
-      nil
+      address = get_address(row)
+      {lon, lat} = EscapeDisaster.Apis.Naver.get_coordinates(address)
+      {x_3857, y_3857} = EscapeDisaster.Proj.epsg_4326_to_epsg_3857({lon, lat})
+
+      row ++ [lon, lat, x_3857, y_3857]
     end)
   end
 
   defp filter_valid_rows(stream) do
     Stream.filter(stream, fn changeset -> changeset.valid? end)
+  end
+
+  defp get_address(row) do
+    road_name_address = Enum.at(row, 19)
+    land_lot_number_address = Enum.at(row, 18)
+
+    if road_name_address != "" do
+      road_name_address
+    else
+      land_lot_number_address
+    end
   end
 
   defp serialize([
@@ -76,21 +102,22 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
          data_update_state,
          data_updated_at,
          operator_business_type_name,
-         x_coord,
-         y_coord,
+         x_epsg_2097,
+         y_epsg_2097,
          shelter_location,
          shelter_type,
          shelter_building_name,
-         expiration_date
+         expiration_date,
+         lon,
+         lat,
+         x_epsg_3857,
+         y_epsg_3857
        ]) do
     with {parsed_number, _rem} <- Integer.parse(number),
          {parsed_operation_state_code, _rem} <- Integer.parse(operation_state_code),
          {parsed_precise_operation_state_code, _rem} <-
            Integer.parse(precise_operation_state_code),
          {parsed_surface_area, _rem} <- Float.parse(surface_area),
-         # TODO: Convert from EPSG:2097 to EPSG:3857
-         {parsed_x_coord, _rem} <- Float.parse(x_coord),
-         {parsed_y_coord, _rem} <- Float.parse(y_coord),
          {:ok, parsed_license_date} <- Date.from_iso8601(license_date),
          {:ok, parsed_license_cancellation_date} <-
            serialize_optional_date(license_cancellation_date),
@@ -131,12 +158,16 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
         data_update_state: data_update_state,
         data_updated_at: parsed_data_updated_at,
         operator_business_type_name: operator_business_type_name,
-        x_coord: parsed_x_coord,
-        y_coord: parsed_y_coord,
+        x_epsg_2097: serialize_optional_float(x_epsg_2097),
+        y_epsg_2097: serialize_optional_float(y_epsg_2097),
         shelter_location: shelter_location,
         shelter_type: shelter_type,
         shelter_building_name: shelter_building_name,
-        expiration_date: parsed_expiration_date
+        expiration_date: parsed_expiration_date,
+        lon: lon,
+        lat: lat,
+        x_epsg_3857: x_epsg_3857,
+        y_epsg_3857: y_epsg_3857
       }
     else
       _err -> %{}
@@ -157,16 +188,6 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   end
 
   defp serialize_datetime(datetime), do: (datetime <> "+09:00") |> DateTime.from_iso8601()
-
-  def upsert(stream) do
-    entries = stream |> Enum.to_list()
-
-    Enum.reduce(entries, Ecto.Multi.new(), fn entry, acc ->
-      Ecto.Multi.insert(acc, entry.changes.shelter_id, entry,
-        conflict_target: :shelter_id,
-        on_conflict: :replace_all
-      )
-    end)
-    |> EscapeDisaster.Repo.transaction()
-  end
+  defp serialize_optional_float(""), do: nil
+  defp serialize_optional_float(float), do: Float.parse(float) |> elem(0)
 end

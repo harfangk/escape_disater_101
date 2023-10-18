@@ -2,12 +2,12 @@ defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseShelters do
   use Ecto.Migration
 
   def change do
-    create table(:civil_defense_shelters) do
+    create table(:civil_defense_shelters, primary_key: false) do
       add :number, :integer, null: false
       add :open_api_service_name, :string, null: false
       add :open_api_service_id, :string, null: false
       add :open_api_local_government_code, :string, null: false
-      add :shelter_id, :string, null: false
+      add :shelter_id, :string, null: false, primary_key: true
       add :license_date, :date, null: false
       add :license_cancellation_date, :date
       add :operation_state_code, :integer, null: false
@@ -29,16 +29,20 @@ defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseShelters do
       add :data_update_state, :string, null: false
       add :data_updated_at, :utc_datetime, null: false
       add :operator_business_type_name, :string
-      add :x_coord, :float, null: false
-      add :y_coord, :float, null: false
+      add :x_epsg_2097, :float
+      add :y_epsg_2097, :float
       add :shelter_location, :string
       add :shelter_type, :string, null: false
       add :shelter_building_name, :string
       add :expiration_date, :date
+      add :lon, :float, null: false
+      add :lat, :float, null: false
+      add :x_epsg_3857, :float, null: false
+      add :y_epsg_3857, :float, null: false
     end
 
-    create index(:civil_defense_shelters, [:x_coord])
-    create index(:civil_defense_shelters, [:y_coord])
+    create index(:civil_defense_shelters, [:x_epsg_3857])
+    create index(:civil_defense_shelters, [:y_epsg_3857])
     create unique_index(:civil_defense_shelters, [:shelter_id])
   end
 end

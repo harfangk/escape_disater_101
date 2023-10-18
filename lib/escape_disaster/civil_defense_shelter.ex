@@ -12,12 +12,13 @@ defmodule EscapeDisaster.CivilDefenseShelter do
   # 소재지전체주소	도로명전체주소	도로명우편번호	사업장명	최종수정시점	데이터갱신구분	데이터갱신일자	업태구분명	좌표정보(x)	좌표정보(y)	
   # 비상시설위치	시설구분명	시설명건물명	해제일자
 
+  @primary_key false
   schema "civil_defense_shelters" do
     field :number, :integer
     field :open_api_service_name, :string
     field :open_api_service_id, :string
     field :open_api_local_government_code, :string
-    field :shelter_id, :string
+    field :shelter_id, :string, primary_key: true
     field :license_date, :date
     field :license_cancellation_date, :date
     field :operation_state_code, :integer
@@ -39,12 +40,16 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     field :data_update_state, :string
     field :data_updated_at, :utc_datetime
     field :operator_business_type_name, :string
-    field :x_coord, :float
-    field :y_coord, :float
+    field :x_epsg_2097, :float
+    field :y_epsg_2097, :float
     field :shelter_location, :string
     field :shelter_type, :string
     field :shelter_building_name, :string
     field :expiration_date, :date
+    field :lon, :float
+    field :lat, :float
+    field :x_epsg_3857, :float
+    field :y_epsg_3857, :float
   end
 
   def changeset(civil_defense_shelter, params \\ %{}) do
@@ -76,12 +81,16 @@ defmodule EscapeDisaster.CivilDefenseShelter do
       :data_update_state,
       :data_updated_at,
       :operator_business_type_name,
-      :x_coord,
-      :y_coord,
+      :x_epsg_2097,
+      :y_epsg_2097,
       :shelter_location,
       :shelter_type,
       :shelter_building_name,
-      :expiration_date
+      :expiration_date,
+      :lon,
+      :lat,
+      :x_epsg_3857,
+      :y_epsg_3857
     ])
     |> validate_required([
       :number,
@@ -97,9 +106,11 @@ defmodule EscapeDisaster.CivilDefenseShelter do
       :source_data_submitted_at,
       :data_updated_at,
       :data_update_state,
-      :x_coord,
-      :y_coord,
-      :shelter_type
+      :shelter_type,
+      :lon,
+      :lat,
+      :x_epsg_3857,
+      :y_epsg_3857
     ])
   end
 
@@ -116,8 +127,8 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     query =
       from c in CivilDefenseShelter,
         where:
-          c.x_coord >= ^bottom_left_x_coord and c.x_coord <= ^top_right_x_coord and
-            c.y_coord >= ^bottom_left_y_coord and c.y_coord <= ^top_right_y_coord and
+          c.x_epsg_3857 >= ^bottom_left_x_coord and c.x_epsg_3857 <= ^top_right_x_coord and
+            c.y_epsg_3857 >= ^bottom_left_y_coord and c.y_epsg_3857 <= ^top_right_y_coord and
             c.operation_state_code == 1,
         select:
           map(c, [
@@ -125,8 +136,8 @@ defmodule EscapeDisaster.CivilDefenseShelter do
             :license_date,
             :road_name_address,
             :road_name_postal_code,
-            :x_coord,
-            :y_coord,
+            :x_epsg_3857,
+            :y_epsg_3857,
             :operator_name,
             :shelter_building_name
           ])
