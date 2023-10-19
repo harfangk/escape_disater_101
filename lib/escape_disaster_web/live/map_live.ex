@@ -21,67 +21,71 @@ defmodule EscapeDisasterWeb.MapLive do
     {:ok, socket}
   end
 
-  def handle_event("toggle-forest-fire-layer", %{"show_forest_fire" => bool}, socket) do
-    new_bool = String.to_existing_atom(bool)
+  def handle_event("toggle-forest-fire-layer", %{"show_forest_fire" => string_bool}, socket) do
+    bool = String.to_existing_atom(string_bool)
 
     map_layers =
       socket.assigns.map_layers
-      |> Map.put("show_forest_fire", new_bool)
+      |> Map.put("show_forest_fire", bool)
 
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{key: "forestFire", value: new_bool})
+      |> push_event("toggle-layer", %{layer: "forestFire", shouldShow: bool})
 
     {:noreply, socket}
   end
 
-  def handle_event("toggle-flood-layer", %{"show_flood" => bool}, socket) do
-    new_bool = String.to_existing_atom(bool)
+  def handle_event("toggle-flood-layer", %{"show_flood" => string_bool}, socket) do
+    bool = String.to_existing_atom(string_bool)
 
     map_layers =
       socket.assigns.map_layers
-      |> Map.put("show_flood", new_bool)
+      |> Map.put("show_flood", bool)
 
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{key: "flood", value: new_bool})
+      |> push_event("toggle-layer", %{layer: "flood", shouldShow: bool})
 
     {:noreply, socket}
   end
 
-  def handle_event("toggle-disaster-warning-layer", %{"show_disaster_warning" => bool}, socket) do
-    new_bool = String.to_existing_atom(bool)
+  def handle_event(
+        "toggle-disaster-warning-layer",
+        %{"show_disaster_warning" => string_bool},
+        socket
+      ) do
+    bool = String.to_existing_atom(string_bool)
 
     map_layers =
       socket.assigns.map_layers
-      |> Map.put("show_disaster_warning", new_bool)
+      |> Map.put("show_disaster_warning", bool)
 
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{key: "disasterWarning", value: new_bool})
+      |> push_event("toggle-layer", %{layer: "disasterWarning", shouldShow: bool})
 
     {:noreply, socket}
   end
 
   def handle_event(
         "toggle-civil-defense-shelters-layer",
-        %{"show_civil_defense_shelters" => bool},
+        %{"show_civil_defense_shelters" => string_bool},
         socket
       ) do
-    new_bool = String.to_existing_atom(bool)
+    bool = String.to_existing_atom(string_bool)
 
     map_layers =
       socket.assigns.map_layers
-      |> Map.put("show_civil_defense_shelters", new_bool)
+      |> Map.put("show_civil_defense_shelters", bool)
 
     shelters =
-      if new_bool do
+      if bool do
         CivilDefenseShelter.get_shelters_to_show(
-          socket.assigns.coordinates.bottomLeft,
-          socket.assigns.coordinates.topRight
+          socket.assigns.coordinates["bottom_left"],
+          socket.assigns.coordinates["top_right"]
         )
       else
         []
@@ -90,7 +94,11 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{key: "civilDefenseShelters", value: new_bool})
+      |> push_event("toggle-layer", %{
+        layer: "civilDefenseShelters",
+        shouldShow: bool,
+        items: shelters
+      })
 
     {:noreply, socket}
   end
