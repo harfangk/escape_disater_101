@@ -1,5 +1,6 @@
 defmodule EscapeDisasterWeb.MapLive do
   alias EscapeDisaster.CivilDefenseShelter
+  alias EscapeDisaster.CivilDefenseWaterSource
   use Phoenix.LiveView
   import EscapeDisasterWeb.CoreComponents
 
@@ -10,7 +11,8 @@ defmodule EscapeDisasterWeb.MapLive do
         "show_forest_fire" => true,
         "show_flood" => true,
         "show_disaster_warning" => true,
-        "show_civil_defense_shelters" => false
+        "show_civil_defense_shelters" => false,
+        "show_civil_defense_water_sources" => false
       })
       |> assign(:coordinates, %{
         "center" => nil,
@@ -98,6 +100,39 @@ defmodule EscapeDisasterWeb.MapLive do
         layer: "civilDefenseShelters",
         shouldShow: bool,
         items: shelters
+      })
+
+    {:noreply, socket}
+  end
+
+  def handle_event(
+        "toggle-civil-defense-water-sources-layer",
+        %{"show_civil_defense_water_sources" => string_bool},
+        socket
+      ) do
+    bool = String.to_existing_atom(string_bool)
+
+    map_layers =
+      socket.assigns.map_layers
+      |> Map.put("show_civil_defense_water_sources", bool)
+
+    water_sources =
+      if bool do
+        CivilDefenseWaterSource.get_water_sources_to_show(
+          socket.assigns.coordinates["bottom_left"],
+          socket.assigns.coordinates["top_right"]
+        )
+      else
+        []
+      end
+
+    socket =
+      socket
+      |> assign(:map_layers, map_layers)
+      |> push_event("toggle-layer", %{
+        layer: "civilDefenseWaterSources",
+        shouldShow: bool,
+        items: water_sources
       })
 
     {:noreply, socket}

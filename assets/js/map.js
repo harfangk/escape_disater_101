@@ -23,6 +23,7 @@ const BASE_LAYER_NAME = 'base'
 const DISASTER_WARNING_LAYER_NAME = 'disasterWarning'
 const FLOOD_LAYER_NAME = 'flood'
 const CIVIL_DEFENSE_SHELTERS_LAYER_NAME = 'civilDefenseShelters'
+const CIVIL_DEFENSE_WATER_SOURCES_LAYER_NAME = 'civilDefenseWaterSources'
 const MAP_LAYER_KEYS = [
   FOREST_FIRE_LAYER_NAME,
   DISASTER_WARNING_LAYER_NAME,
@@ -30,6 +31,7 @@ const MAP_LAYER_KEYS = [
 ]
 const MARKER_LAYER_KEYS = [
   CIVIL_DEFENSE_SHELTERS_LAYER_NAME,
+  CIVIL_DEFENSE_WATER_SOURCES_LAYER_NAME,
 ]
 
 const forestFireLayer = new TileLayer({

@@ -1,5 +1,5 @@
-defmodule EscapeDisaster.CivilDefenseShelter do
-  alias EscapeDisaster.CivilDefenseShelter
+defmodule EscapeDisaster.CivilDefenseWaterSource do
+  alias EscapeDisaster.CivilDefenseWaterSource
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
@@ -13,7 +13,7 @@ defmodule EscapeDisaster.CivilDefenseShelter do
   # 비상시설위치	시설구분명	시설명건물명	해제일자
 
   @primary_key false
-  schema "civil_defense_shelters" do
+  schema "civil_defense_water_sources" do
     field :number, :integer
     field :open_api_service_name, :string
     field :open_api_service_id, :string
@@ -52,8 +52,8 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     field :y_epsg_3857, :float
   end
 
-  def changeset(civil_defense_shelter, params \\ %{}) do
-    civil_defense_shelter
+  def changeset(civil_defense_water_source, params \\ %{}) do
+    civil_defense_water_source
     |> cast(params, [
       :number,
       :open_api_service_name,
@@ -114,7 +114,7 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     ])
   end
 
-  def get_shelters_to_show(
+  def get_water_sources_to_show(
         [
           bottom_left_x_coord,
           bottom_left_y_coord
@@ -125,7 +125,7 @@ defmodule EscapeDisaster.CivilDefenseShelter do
         ]
       ) do
     query =
-      from c in CivilDefenseShelter,
+      from c in CivilDefenseWaterSource,
         where:
           c.x_epsg_3857 >= ^bottom_left_x_coord and c.x_epsg_3857 <= ^top_right_x_coord and
             c.y_epsg_3857 >= ^bottom_left_y_coord and c.y_epsg_3857 <= ^top_right_y_coord and

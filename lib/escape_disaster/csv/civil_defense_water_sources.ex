@@ -1,5 +1,5 @@
-defmodule EscapeDisaster.CSV.CivilDefenseShelters do
-  alias EscapeDisaster.CivilDefenseShelter
+defmodule EscapeDisaster.CSV.CivilDefenseWaterSources do
+  alias EscapeDisaster.CivilDefenseWaterSource
   alias NimbleCSV.RFC4180, as: CSV
 
   def parse(file_path, encoding \\ "euc-kr") do
@@ -24,7 +24,7 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
       |> process()
       |> Enum.to_list()
 
-    EscapeDisaster.Repo.insert_all(EscapeDisaster.CivilDefenseShelter, entries,
+    EscapeDisaster.Repo.insert_all(EscapeDisaster.CivilDefenseWaterSource, entries,
       conflict_target: :id,
       on_conflict: :replace_all
     )
@@ -46,7 +46,7 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
 
   defp serialize_rows(stream) do
     Stream.map(stream, fn row ->
-      CivilDefenseShelter.changeset(%CivilDefenseShelter{}, serialize(row))
+      CivilDefenseWaterSource.changeset(%CivilDefenseWaterSource{}, serialize(row))
     end)
   end
 

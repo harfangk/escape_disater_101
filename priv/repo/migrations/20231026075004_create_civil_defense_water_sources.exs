@@ -1,8 +1,8 @@
-defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseShelters do
+defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseWaterSources do
   use Ecto.Migration
 
   def change do
-    create table(:civil_defense_shelters, primary_key: false) do
+    create table(:civil_defense_water_sources, primary_key: false) do
       add :number, :integer, null: false
       add :open_api_service_name, :string, null: false
       add :open_api_service_id, :string, null: false
@@ -41,8 +41,8 @@ defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseShelters do
       add :y_epsg_3857, :float, null: false
     end
 
-    create index(:civil_defense_shelters, [:x_epsg_3857])
-    create index(:civil_defense_shelters, [:y_epsg_3857])
-    create unique_index(:civil_defense_shelters, [:id])
+    create index(:civil_defense_water_sources, [:x_epsg_3857])
+    create index(:civil_defense_water_sources, [:y_epsg_3857])
+    create unique_index(:civil_defense_water_sources, [:id])
   end
 end
