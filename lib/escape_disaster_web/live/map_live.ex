@@ -140,14 +140,18 @@ defmodule EscapeDisasterWeb.MapLive do
 
   def handle_event(
         "update-map-info",
-        %{"bottomLeft" => bottom_left, "topRight" => top_right, "center" => center},
+        %{
+          "bottomLeft" => [bottom_left_x, bottom_left_y],
+          "topRight" => [top_right_x, top_right_y],
+          "center" => [center_x, center_y]
+        },
         socket
       ) do
     coordinates =
       socket.assigns.coordinates
-      |> Map.put("bottom_left", bottom_left)
-      |> Map.put("top_right", top_right)
-      |> Map.put("center", center)
+      |> Map.put("bottom_left", {bottom_left_x, bottom_left_y})
+      |> Map.put("top_right", {top_right_x, top_right_y})
+      |> Map.put("center", {center_x, center_y})
 
     socket =
       socket

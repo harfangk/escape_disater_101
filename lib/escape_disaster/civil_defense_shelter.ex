@@ -114,21 +114,12 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     ])
   end
 
-  def get_shelters_to_show(
-        [
-          bottom_left_x_coord,
-          bottom_left_y_coord
-        ],
-        [
-          top_right_x_coord,
-          top_right_y_coord
-        ]
-      ) do
+  def get_shelters_to_show({bottom_left_x, bottom_left_y}, {top_right_x, top_right_y}) do
     query =
       from c in CivilDefenseShelter,
         where:
-          c.x_epsg_3857 >= ^bottom_left_x_coord and c.x_epsg_3857 <= ^top_right_x_coord and
-            c.y_epsg_3857 >= ^bottom_left_y_coord and c.y_epsg_3857 <= ^top_right_y_coord and
+          c.x_epsg_3857 >= ^bottom_left_x and c.x_epsg_3857 <= ^top_right_x and
+            c.y_epsg_3857 >= ^bottom_left_y and c.y_epsg_3857 <= ^top_right_y and
             c.operation_state_code == 1,
         select:
           map(c, [
@@ -143,5 +134,28 @@ defmodule EscapeDisaster.CivilDefenseShelter do
           ])
 
     EscapeDisaster.Repo.all(query)
+    |> limit_response_items({bottom_left_x, bottom_left_y}, {top_right_x, top_right_y})
   end
+
+  defp limit_response_items(shelters, {bottom_left_x, bottom_left_y}, {top_right_x, top_right_y})
+       when length(shelters) > 100 do
+    quarter_x_diff = (top_right_x - bottom_left_x) / 4
+    quarter_y_diff = (top_right_y - bottom_left_y) / 4
+    new_bottom_left_x = bottom_left_x + quarter_x_diff
+    new_bottom_left_y = bottom_left_y + quarter_y_diff
+    new_top_right_x = top_right_x - quarter_x_diff
+    new_top_right_y = top_right_y - quarter_y_diff
+
+    shelters
+    |> Enum.filter(fn s ->
+      s.x_epsg_3857 >= new_bottom_left_x and s.x_epsg_3857 <= new_top_right_x and
+        s.y_epsg_3857 >= new_bottom_left_y and s.y_epsg_3857 <= new_top_right_y
+    end)
+    |> limit_response_items(
+      {new_bottom_left_x, new_bottom_left_y},
+      {new_top_right_x, new_top_right_y}
+    )
+  end
+
+  defp limit_response_items(shelters, _, _), do: shelters
 end

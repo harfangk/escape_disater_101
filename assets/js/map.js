@@ -106,7 +106,7 @@ const center = transformCoordinate(getCenterCoordinate())
 
 const view = new View({
   center: center,
-  zoom: 8
+  zoom: 10
 })
 let map
 
