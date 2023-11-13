@@ -8,6 +8,7 @@ config :escape_disaster, EscapeDisaster.Repo,
   database: "escape_disaster_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
+  port: 48140,
   pool_size: 10
 
 # For development, we disable any cache and enable
