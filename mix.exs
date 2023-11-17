@@ -50,7 +50,6 @@ defmodule EscapeDisaster.MixProject do
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:inflex, "~> 2.0"},
       {:nimble_csv, "~> 1.1"},
       {:iconv, "~> 1.0.10"},
       {:req, "~> 0.4.4"}
