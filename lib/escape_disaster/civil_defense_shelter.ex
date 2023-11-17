@@ -50,6 +50,7 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     field :lat, :float
     field :x_epsg_3857, :float
     field :y_epsg_3857, :float
+    field :geom, Geo.PostGIS.Geometry
   end
 
   def changeset(civil_defense_shelter, params \\ %{}) do
@@ -90,7 +91,8 @@ defmodule EscapeDisaster.CivilDefenseShelter do
       :lon,
       :lat,
       :x_epsg_3857,
-      :y_epsg_3857
+      :y_epsg_3857,
+      :geom
     ])
     |> validate_required([
       :number,
@@ -110,7 +112,8 @@ defmodule EscapeDisaster.CivilDefenseShelter do
       :lon,
       :lat,
       :x_epsg_3857,
-      :y_epsg_3857
+      :y_epsg_3857,
+      :geom
     ])
   end
 

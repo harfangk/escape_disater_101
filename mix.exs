@@ -52,7 +52,8 @@ defmodule EscapeDisaster.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:nimble_csv, "~> 1.1"},
       {:iconv, "~> 1.0.10"},
-      {:req, "~> 0.4.4"}
+      {:req, "~> 0.4.4"},
+      {:geo_postgis, "~> 3.5"}
     ]
   end
 

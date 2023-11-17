@@ -167,7 +167,8 @@ defmodule EscapeDisaster.CSV.CivilDefenseWaterSources do
         lon: lon,
         lat: lat,
         x_epsg_3857: x_epsg_3857,
-        y_epsg_3857: y_epsg_3857
+        y_epsg_3857: y_epsg_3857,
+        geom: %Geo.Point{coordinates: {lon, lat}, srid: 4326}
       }
     else
       _err -> %{}

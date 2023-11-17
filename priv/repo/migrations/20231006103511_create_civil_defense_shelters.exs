@@ -41,8 +41,12 @@ defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseShelters do
       add :y_epsg_3857, :float, null: false
     end
 
-    create index(:civil_defense_shelters, [:x_epsg_3857])
-    create index(:civil_defense_shelters, [:y_epsg_3857])
+    execute("SELECT AddGeometryColumn ('civil_defense_shelters','geom',4326,'POINT',2);")
+
+    execute(
+      "CREATE INDEX civil_defense_shelters_geom_idx ON civil_defense_shelters USING GIST (geom);"
+    )
+
     create unique_index(:civil_defense_shelters, [:id])
   end
 end

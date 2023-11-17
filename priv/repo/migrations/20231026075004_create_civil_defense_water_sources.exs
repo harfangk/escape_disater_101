@@ -41,8 +41,12 @@ defmodule EscapeDisaster.Repo.Migrations.CreateCivilDefenseWaterSources do
       add :y_epsg_3857, :float, null: false
     end
 
-    create index(:civil_defense_water_sources, [:x_epsg_3857])
-    create index(:civil_defense_water_sources, [:y_epsg_3857])
+    execute("SELECT AddGeometryColumn ('civil_defense_water_sources','geom',4326,'POINT',2);")
+
+    execute(
+      "CREATE INDEX civil_defense_water_sources_geom_idx ON civil_defense_water_sources USING GIST (geom);"
+    )
+
     create unique_index(:civil_defense_water_sources, [:id])
   end
 end
