@@ -127,7 +127,7 @@ window.addEventListener("phx:page-loading-stop", _ => {
   map.on('moveend', onMoveEnd);
 })
 
-window.addEventListener("phx:toggle-layer", (payload) => {
+window.addEventListener("phx:toggle-map-layer", (payload) => {
   const layerKey = payload.detail.layer
   const shouldShow = payload.detail.shouldShow
   if (MAP_LAYER_KEYS.includes(layerKey)) {
@@ -160,6 +160,22 @@ window.addEventListener("phx:toggle-layer", (payload) => {
         map.removeLayer(targetLayer)
       }
     }
+  }
+})
+
+window.addEventListener("phx:update-map-features", (payload) => {
+  const layerKey = payload.detail.layer
+  const targetLayer = map.getLayers().getArray().filter(l => l.get('name') === layerKey)[0]
+  if (targetLayer) {
+    const items = payload.detail.items
+    const pointFeatures = items.map(i => {
+      return new Feature({
+        geometry: new Point([i.x_epsg_3857, i.y_epsg_3857])
+      })
+    })
+    const source = targetLayer.getSource()
+    source.clear(true)
+    source.addFeatures(pointFeatures)
   }
 })
 

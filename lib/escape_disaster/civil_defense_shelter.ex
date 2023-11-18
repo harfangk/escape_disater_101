@@ -3,6 +3,8 @@ defmodule EscapeDisaster.CivilDefenseShelter do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, only: [from: 2]
+  import Geo.PostGIS
+  import EscapeDisaster.Proj
 
   # 전국민방위대피시설표준데이터
   # https://www.data.go.kr/data/15021098/standard.do
@@ -117,13 +119,32 @@ defmodule EscapeDisaster.CivilDefenseShelter do
     ])
   end
 
-  def get_shelters_to_show({bottom_left_x, bottom_left_y}, {top_right_x, top_right_y}) do
+  def get_shelters_to_show(
+        {center_x, center_y},
+        {bottom_left_x, bottom_left_y},
+        {top_right_x, top_right_y}
+      ) do
+    {center_lon, center_lat} = epsg_3857_to_epsg_4326({center_x, center_y})
+    {bottom_left_lon, bottom_left_lat} = epsg_3857_to_epsg_4326({bottom_left_x, bottom_left_y})
+    {top_right_lon, top_right_lat} = epsg_3857_to_epsg_4326({top_right_x, top_right_y})
+
     query =
       from c in CivilDefenseShelter,
         where:
-          c.x_epsg_3857 >= ^bottom_left_x and c.x_epsg_3857 <= ^top_right_x and
-            c.y_epsg_3857 >= ^bottom_left_y and c.y_epsg_3857 <= ^top_right_y and
+          st_within(
+            c.geom,
+            st_set_srid(
+              st_make_box_2d(
+                st_set_srid(st_make_point(^bottom_left_lon, ^bottom_left_lat), 4326),
+                st_set_srid(st_make_point(^top_right_lon, ^top_right_lat), 4326)
+              ),
+              4326
+            )
+          ) and
             c.operation_state_code == 1,
+        order_by:
+          st_distancesphere(c.geom, st_set_srid(st_make_point(^center_lon, ^center_lat), 4326)),
+        limit: 10,
         select:
           map(c, [
             :id,
@@ -137,7 +158,6 @@ defmodule EscapeDisaster.CivilDefenseShelter do
           ])
 
     EscapeDisaster.Repo.all(query)
-    |> limit_response_items({bottom_left_x, bottom_left_y}, {top_right_x, top_right_y})
   end
 
   defp limit_response_items(shelters, {bottom_left_x, bottom_left_y}, {top_right_x, top_right_y})

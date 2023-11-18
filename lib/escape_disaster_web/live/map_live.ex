@@ -33,7 +33,7 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{layer: "forestFire", shouldShow: bool})
+      |> push_event("toggle-map-layer", %{layer: "forestFire", shouldShow: bool})
 
     {:noreply, socket}
   end
@@ -48,7 +48,7 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{layer: "flood", shouldShow: bool})
+      |> push_event("toggle-map-layer", %{layer: "flood", shouldShow: bool})
 
     {:noreply, socket}
   end
@@ -67,7 +67,7 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{layer: "disasterWarning", shouldShow: bool})
+      |> push_event("toggle-map-layer", %{layer: "disasterWarning", shouldShow: bool})
 
     {:noreply, socket}
   end
@@ -86,6 +86,7 @@ defmodule EscapeDisasterWeb.MapLive do
     shelters =
       if bool do
         CivilDefenseShelter.get_shelters_to_show(
+          socket.assigns.coordinates["center"],
           socket.assigns.coordinates["bottom_left"],
           socket.assigns.coordinates["top_right"]
         )
@@ -96,7 +97,7 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{
+      |> push_event("toggle-map-layer", %{
         layer: "civilDefenseShelters",
         shouldShow: bool,
         items: shelters
@@ -129,7 +130,7 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:map_layers, map_layers)
-      |> push_event("toggle-layer", %{
+      |> push_event("toggle-map-layer", %{
         layer: "civilDefenseWaterSources",
         shouldShow: bool,
         items: water_sources
@@ -156,7 +157,29 @@ defmodule EscapeDisasterWeb.MapLive do
     socket =
       socket
       |> assign(:coordinates, coordinates)
+      |> add_update_features_event()
 
     {:noreply, socket}
+  end
+
+  defp add_update_features_event(socket) do
+    cond do
+      socket.assigns.map_layers["show_civil_defense_shelters"] ->
+        items =
+          CivilDefenseShelter.get_shelters_to_show(
+            socket.assigns.coordinates["center"],
+            socket.assigns.coordinates["bottom_left"],
+            socket.assigns.coordinates["top_right"]
+          )
+
+        socket
+        |> push_event("update-map-features", %{
+          layer: "civilDefenseShelters",
+          items: items
+        })
+
+      true ->
+        socket
+    end
   end
 end
