@@ -120,6 +120,7 @@ defmodule EscapeDisasterWeb.MapLive do
     water_sources =
       if bool do
         CivilDefenseWaterSource.get_water_sources_to_show(
+          socket.assigns.coordinates["center"],
           socket.assigns.coordinates["bottom_left"],
           socket.assigns.coordinates["top_right"]
         )
@@ -175,6 +176,20 @@ defmodule EscapeDisasterWeb.MapLive do
         socket
         |> push_event("update-map-features", %{
           layer: "civilDefenseShelters",
+          items: items
+        })
+
+      socket.assigns.map_layers["show_civil_defense_water_sources"] ->
+        items =
+          CivilDefenseWaterSource.get_water_sources_to_show(
+            socket.assigns.coordinates["center"],
+            socket.assigns.coordinates["bottom_left"],
+            socket.assigns.coordinates["top_right"]
+          )
+
+        socket
+        |> push_event("update-map-features", %{
+          layer: "civilDefenseWaterSources",
           items: items
         })
 
