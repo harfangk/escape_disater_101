@@ -24,16 +24,17 @@ defmodule EscapeDisaster.Apis.Naver do
       Jason.decode!(resp.body)
 
     if resp_body["status"] == "OK" do
-      address = resp_body["addresses"] |> hd
-
-      with {x, _rem} <- Float.parse(address["x"]),
+      with address when not is_nil(address) <- List.first(resp_body["addresses"]),
+           {x, _rem} <- Float.parse(address["x"]),
            {y, _rem} <- Float.parse(address["y"]) do
-        {x, y}
+        {:ok, {x, y}}
       else
-        _ -> nil
+        nil -> {:error, :empty_geocoding_result_error}
+        :error -> {:error, :parse_error}
+        _ -> {:error, :unknown_error}
       end
     else
-      nil
+      {:error, :http_error}
     end
   end
 end
