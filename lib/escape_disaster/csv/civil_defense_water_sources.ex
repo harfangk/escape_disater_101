@@ -2,21 +2,6 @@ defmodule EscapeDisaster.CSV.CivilDefenseWaterSources do
   alias EscapeDisaster.CivilDefenseWaterSource
   alias NimbleCSV.RFC4180, as: CSV
 
-  def parse(file_path, encoding \\ "euc-kr") do
-    file_path
-    |> build_stream()
-    |> convert_encoding(encoding)
-    |> parse_stream()
-  end
-
-  def process(stream) do
-    stream
-    |> add_coordinates()
-    |> serialize_rows()
-    |> filter_valid_rows()
-    |> Stream.map(fn changeset -> changeset.changes end)
-  end
-
   def upsert(file_path) do
     entries =
       file_path
@@ -30,6 +15,13 @@ defmodule EscapeDisaster.CSV.CivilDefenseWaterSources do
     )
   end
 
+  defp parse(file_path, encoding \\ "euc-kr") do
+    file_path
+    |> build_stream()
+    |> convert_encoding(encoding)
+    |> CSV.parse_stream()
+  end
+
   defp build_stream(file_path) do
     file_path
     |> File.stream!()
@@ -40,39 +32,52 @@ defmodule EscapeDisaster.CSV.CivilDefenseWaterSources do
     |> Stream.map(fn r -> :iconv.convert(encoding, "utf-8", r) end)
   end
 
-  defp parse_stream(stream) do
-    CSV.parse_stream(stream)
+  def process(stream) do
+    stream
+    |> add_coordinates()
+    |> serialize_rows()
+    |> filter_valid_rows()
+    |> Stream.map(fn changeset -> changeset.changes end)
+  end
+
+  defp add_coordinates(stream) do
+    Stream.map(stream, fn
+      row ->
+        query_result =
+          get_addresses(row)
+          |> query_addresses()
+
+        case query_result do
+          {:ok, {lon, lat}} ->
+            {x_3857, y_3857} = EscapeDisaster.Proj.epsg_4326_to_epsg_3857({lon, lat})
+            row ++ [lon, lat, x_3857, y_3857]
+
+          {:error, _} ->
+            row ++ [nil, nil, nil, nil]
+        end
+    end)
+  end
+
+  defp get_addresses(row) do
+    road_name_address = Enum.at(row, 19)
+    land_lot_number_address = Enum.at(row, 18)
+
+    [road_name_address, land_lot_number_address]
+  end
+
+  defp query_addresses(addresses) do
+    Enum.reduce_while(addresses, {:error, :empty_addresses_error}, fn address, _result ->
+      case EscapeDisaster.Apis.Naver.get_coordinates(address) do
+        {:ok, coordinates} -> {:halt, {:ok, coordinates}}
+        {:error, error} -> {:cont, {:error, error}}
+      end
+    end)
   end
 
   defp serialize_rows(stream) do
     Stream.map(stream, fn row ->
       CivilDefenseWaterSource.changeset(%CivilDefenseWaterSource{}, serialize(row))
     end)
-  end
-
-  defp add_coordinates(stream) do
-    Stream.map(stream, fn row ->
-      address = get_address(row)
-      {lon, lat} = EscapeDisaster.Apis.Naver.get_coordinates(address)
-      {x_3857, y_3857} = EscapeDisaster.Proj.epsg_4326_to_epsg_3857({lon, lat})
-
-      row ++ [lon, lat, x_3857, y_3857]
-    end)
-  end
-
-  defp filter_valid_rows(stream) do
-    Stream.filter(stream, fn changeset -> changeset.valid? end)
-  end
-
-  defp get_address(row) do
-    road_name_address = Enum.at(row, 19)
-    land_lot_number_address = Enum.at(row, 18)
-
-    if road_name_address != "" do
-      road_name_address
-    else
-      land_lot_number_address
-    end
   end
 
   defp serialize([
@@ -191,4 +196,8 @@ defmodule EscapeDisaster.CSV.CivilDefenseWaterSources do
   defp serialize_datetime(datetime), do: (datetime <> "+09:00") |> DateTime.from_iso8601()
   defp serialize_optional_float(""), do: nil
   defp serialize_optional_float(float), do: Float.parse(float) |> elem(0)
+
+  defp filter_valid_rows(stream) do
+    Stream.filter(stream, fn changeset -> changeset.valid? end)
+  end
 end
