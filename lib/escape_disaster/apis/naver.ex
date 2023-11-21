@@ -27,13 +27,23 @@ defmodule EscapeDisaster.Apis.Naver do
       with address when not is_nil(address) <- List.first(resp_body["addresses"]),
            {x, _rem} <- Float.parse(address["x"]),
            {y, _rem} <- Float.parse(address["y"]) do
+        IO.inspect({"success", {x, y}, address["roadAddress"]})
         {:ok, {x, y}}
       else
-        nil -> {:error, :empty_geocoding_result_error}
-        :error -> {:error, :parse_error}
-        _ -> {:error, :unknown_error}
+        nil ->
+          IO.inspect({"failure", :empty_geocoding_result_error, address})
+          {:error, :empty_geocoding_result_error}
+
+        :error ->
+          IO.inspect({"failure", :parse_error, address})
+          {:error, :parse_error}
+
+        _ ->
+          IO.inspect({"failure", :unknown_error, address})
+          {:error, :unknown_error}
       end
     else
+      IO.inspect({"failure", :http_error, address})
       {:error, :http_error}
     end
   end
