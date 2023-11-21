@@ -28,7 +28,7 @@ config :escape_disaster, EscapeDisasterWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "CpWtU3xy6IIJ7irsEuWs4h2eTcW6UN+zqOO2WSJsEjgPZqAvaiIW3OL/4+kySG3G",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+    node: ["build.js", "--watch", cd: Path.expand("../assets", __DIR__)],
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 

@@ -20,6 +20,10 @@ defmodule EscapeDisasterWeb.Router do
     live "/", MapLive
   end
 
+  scope "/api", EscapeDisasterWeb.Api do
+    pipe_through :api
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", EscapeDisasterWeb do
   #   pipe_through :api

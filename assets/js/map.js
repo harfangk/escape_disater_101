@@ -12,9 +12,7 @@ import VectorLayer from 'ol/layer/Vector';
 // Calling API on our own backend, downloading and saving map tile images, then serving them would hide these keys
 // but will incur network costs that we're not willing to pay at the moment, so the keys are exposed to the public.
 const DEFAULT_CENTER_COORDINATE = [127.05488, 37.27538]
-const VWORLD_API_KEY = 'B1E465C1-3237-368E-8ACF-AA0E89EA8C43'
-const VWORLD_DOMAIN = 'http://localhost:4000'
-const VWORLD_WMS_URL = `https://api.vworld.kr/req/wms?KEY=${VWORLD_API_KEY}&DOMAIN=${encodeURIComponent(VWORLD_DOMAIN)}`
+const VWORLD_WMS_URL = `https://api.vworld.kr/req/wms?KEY=${VWORLD_API_KEY}&DOMAIN=${encodeURIComponent(VWORLD_APP_URL)}`
 const VWORLD_WMTS_URL = `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_API_KEY}/Base/{z}/{y}/{x}.png`
 const SAFEMAP_API_KEY = 'CD1CCFGI-CD1C-CD1C-CD1C-CD1CCFGI4Z'
 const SAFEMAP_URL = `https://www.safemap.go.kr/openApiService/wms/getLayerData.do?apikey=${SAFEMAP_API_KEY}`
