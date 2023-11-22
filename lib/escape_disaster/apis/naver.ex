@@ -1,4 +1,5 @@
 defmodule EscapeDisaster.Apis.Naver do
+  require Logger
   @url "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
   def get_coordinates(address) do
     uri =
@@ -20,31 +21,49 @@ defmodule EscapeDisaster.Apis.Naver do
 
     {_req, resp} = Req.Request.run_request(req)
 
-    resp_body =
-      Jason.decode!(resp.body)
-
-    if resp_body["status"] == "OK" do
-      with address when not is_nil(address) <- List.first(resp_body["addresses"]),
-           {x, _rem} <- Float.parse(address["x"]),
-           {y, _rem} <- Float.parse(address["y"]) do
-        IO.inspect({"success", {x, y}, address["roadAddress"]})
-        {:ok, {x, y}}
-      else
-        nil ->
-          IO.inspect({"failure", :empty_geocoding_result_error, address})
-          {:error, :empty_geocoding_result_error}
-
-        :error ->
-          IO.inspect({"failure", :parse_error, address})
-          {:error, :parse_error}
-
-        _ ->
-          IO.inspect({"failure", :unknown_error, address})
-          {:error, :unknown_error}
-      end
+    with %Req.Response{body: resp_body} <- resp,
+         decoded_body <- Jason.decode!(resp_body),
+         "OK" <- decoded_body["status"],
+         resp_address when not is_nil(resp_address) <- List.first(decoded_body["addresses"]),
+         {x, _rem} <- Float.parse(resp_address["x"]),
+         {y, _rem} <- Float.parse(resp_address["y"]) do
+      Logger.info("Success calling geocode API, result: {x: #{x}, y: #{y}}, query: #{address}")
+      {:ok, {x, y}}
     else
-      IO.inspect({"failure", :http_error, address})
-      {:error, :http_error}
+      nil ->
+        Logger.error(
+          "Error calling geocode API, error_code: #{:empty_geocoding_result_error}, detail: none, query: #{address}"
+        )
+
+        {:error, :empty_geocoding_result_error}
+
+      :error ->
+        Logger.error(
+          "Error calling geocode API, error_code: #{:parse_error}, detail: none, query: #{address}"
+        )
+
+        {:error, :parse_error}
+
+      transport_error = %Mint.TransportError{} ->
+        Logger.error(
+          "Error calling geocode API, error_code: #{:transport_error}, detail: #{inspect(transport_error)}, query: #{address}"
+        )
+
+        {:error, :transport_error}
+
+      http_error = %Mint.HTTPError{} ->
+        Logger.error(
+          "Error calling geocode API, error_code: #{:http_error}, detail: #{inspect(http_error)}, query: #{address}"
+        )
+
+        {:error, :http_error}
+
+      error ->
+        Logger.error(
+          "Error calling geocode API, error_code: #{:unknown_error}, detail: #{inspect(error)}, query: #{address}"
+        )
+
+        {:error, :unknown_error}
     end
   end
 end
