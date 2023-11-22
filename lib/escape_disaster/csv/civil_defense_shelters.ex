@@ -3,28 +3,17 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   alias NimbleCSV.RFC4180, as: CSV
 
   def upsert(file_path) do
-    entries =
-      file_path
-      |> parse()
-      |> process()
-      |> Enum.to_list()
-
-    EscapeDisaster.Repo.insert_all(EscapeDisaster.CivilDefenseShelter, entries,
-      conflict_target: :id,
-      on_conflict: :replace_all
-    )
+    file_path
+    |> parse()
+    |> process()
+    |> Stream.run()
   end
 
   defp parse(file_path, encoding \\ "euc-kr") do
     file_path
-    |> build_stream()
+    |> File.stream!()
     |> convert_encoding(encoding)
     |> CSV.parse_stream()
-  end
-
-  defp build_stream(file_path) do
-    file_path
-    |> File.stream!()
   end
 
   defp convert_encoding(stream, encoding) do
@@ -34,28 +23,38 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
 
   defp process(stream) do
     stream
-    |> add_coordinates()
-    |> serialize_rows()
-    |> filter_valid_rows()
-    |> Stream.map(fn changeset -> changeset.changes end)
+    |> Stream.chunk_every(100)
+    |> Stream.map(fn chunk ->
+      entries =
+        chunk
+        |> Enum.map(fn row ->
+          Task.async(fn -> add_coordinates(row) end)
+          |> Task.await()
+        end)
+        |> serialize_rows()
+        |> Enum.filter(fn changeset -> changeset.valid? end)
+        |> Enum.map(fn changeset -> changeset.changes end)
+
+      EscapeDisaster.Repo.insert_all(EscapeDisaster.CivilDefenseShelter, entries,
+        conflict_target: :id,
+        on_conflict: :replace_all
+      )
+    end)
   end
 
-  defp add_coordinates(stream) do
-    Stream.map(stream, fn
-      row ->
-        query_result =
-          get_addresses(row)
-          |> query_addresses()
+  defp add_coordinates(row) do
+    query_result =
+      get_addresses(row)
+      |> query_addresses()
 
-        case query_result do
-          {:ok, {lon, lat}} ->
-            {x_3857, y_3857} = EscapeDisaster.Proj.epsg_4326_to_epsg_3857({lon, lat})
-            row ++ [lon, lat, x_3857, y_3857]
+    case query_result do
+      {:ok, {lon, lat}} ->
+        {x_3857, y_3857} = EscapeDisaster.Proj.epsg_4326_to_epsg_3857({lon, lat})
+        row ++ [lon, lat, x_3857, y_3857]
 
-          {:error, _} ->
-            row ++ [nil, nil, nil, nil]
-        end
-    end)
+      {:error, _} ->
+        row ++ [nil, nil, nil, nil]
+    end
   end
 
   defp get_addresses(row) do
@@ -66,7 +65,9 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   end
 
   defp query_addresses(addresses) do
-    Enum.reduce_while(addresses, {:error, :empty_addresses_error}, fn address, _result ->
+    addresses
+    |> Enum.filter(fn s -> s !== "" end)
+    |> Enum.reduce_while({:error, :empty_addresses_error}, fn address, _result ->
       case EscapeDisaster.Apis.Naver.get_coordinates(address) do
         {:ok, coordinates} -> {:halt, {:ok, coordinates}}
         {:error, error} -> {:cont, {:error, error}}
@@ -196,8 +197,4 @@ defmodule EscapeDisaster.CSV.CivilDefenseShelters do
   defp serialize_datetime(datetime), do: (datetime <> "+09:00") |> DateTime.from_iso8601()
   defp serialize_optional_float(""), do: nil
   defp serialize_optional_float(float), do: Float.parse(float) |> elem(0)
-
-  defp filter_valid_rows(stream) do
-    Stream.filter(stream, fn changeset -> changeset.valid? end)
-  end
 end
