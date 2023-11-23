@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for escape-disaster-shy-frost-4934 on 2023-11-20T19:10:22+09:00
+# fly.toml app configuration file generated for escape-disaster on 2023-11-23T09:40:39+09:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "escape-disaster-shy-frost-4934"
+app = "escape-disaster"
 primary_region = "sin"
 kill_signal = "SIGTERM"
 
@@ -13,7 +13,7 @@ kill_signal = "SIGTERM"
   release_command = "/app/bin/migrate"
 
 [env]
-  PHX_HOST = "escape-disaster-shy-frost-4934.fly.dev"
+  PHX_HOST = "escape-disaster.fly.dev"
   PORT = "8080"
 
 [http_service]
@@ -27,3 +27,8 @@ kill_signal = "SIGTERM"
     type = "connections"
     hard_limit = 1000
     soft_limit = 1000
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024
